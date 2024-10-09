@@ -1,12 +1,4 @@
 # Databricks notebook source
-pip install pytest
-
-# COMMAND ----------
-
-pip install pytest-mock
-
-# COMMAND ----------
-
 import pytest
 import sys
 import os
