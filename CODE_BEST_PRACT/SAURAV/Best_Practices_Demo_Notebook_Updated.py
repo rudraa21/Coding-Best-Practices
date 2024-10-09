@@ -94,7 +94,7 @@ try:
         logger.log_info(f"{source_table} Table exists.")
         # Create Dataframe
         source_df=ingest_data(source_table)
-        logger.log_info(f"source_df created.")
+        logger.log_info("source_df created.")
         error.handle_success(should_exit=False)
     else:
         logger.log_error(f"{source_table} Table does not exist.")
