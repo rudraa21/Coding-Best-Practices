@@ -1,4 +1,4 @@
-from pyspark.sql.functions import *
+from pyspark.sql.functions import col, lit, concat
 
 check_table_exists_test_cases = [
    # Table does not exist, expected result is False    
