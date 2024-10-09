@@ -85,7 +85,7 @@ def apply_transformations(df: DataFrame, transformations: list) -> DataFrame:
     return df
 
 # Function to ingest data from a source
-def ingest_data(spark,source_table: str, filter_condition: str = None):
+def ingest_data(spark,source_table: str, filter_condition: str) -> DataFrame:
     """
     Ingest data from a source table with an optional filter condition.
     

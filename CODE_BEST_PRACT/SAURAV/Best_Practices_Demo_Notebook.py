@@ -74,7 +74,7 @@ target_table = dbutils.widgets.get("target_table")
 
 #create Logger object
 logger = DatabricksLogger()
-response_dict={}
+response_dict:dict={}
 error = DatabricksErrorHandler(response_dict)
 
 # COMMAND ----------
