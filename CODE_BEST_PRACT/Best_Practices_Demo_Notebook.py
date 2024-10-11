@@ -53,17 +53,6 @@
 # MAGIC - **target_format**: Format of the target table (e.g., delta, parquet).
 # MAGIC - **client_id_key**: ID for fetching secret values.
 # MAGIC - **client_secret_key**: Value corresponding to the secret ID.
-# MAGIC
-# MAGIC # Logger and Error Handler
-# MAGIC
-# MAGIC - **Logger Object**: Initializes a logging object for capturing events.
-# MAGIC - **Error Handler Object**: Initializes error handling and response dictionary.
-# MAGIC
-
-# COMMAND ----------
-
-from UTILITIES.error_logger import DatabricksLogger
-from UTILITIES.exception_handler import DatabricksErrorHandler
 
 # COMMAND ----------
 
@@ -109,12 +98,6 @@ client_id_key = dbutils.widgets.get("client_id_key")
 dbutils.widgets.text(name="client_secret_key", defaultValue="CELEBAL-ADB-SECRET-VALUE", label="client_secret_key")
 client_secret_key = dbutils.widgets.get("client_secret_key")
 
-#create Logger object
-logger = DatabricksLogger()
-
-#create error handler object
-response_dict={}
-error = DatabricksErrorHandler(response_dict)
 
 # COMMAND ----------
 
