@@ -36,7 +36,7 @@
 # COMMAND ----------
 
 # DBTITLE 1,importing utilities
-# MAGIC %run ./UTILITIES/common_utilities
+# MAGIC %run ../UTILITIES/common_utilities
 
 # COMMAND ----------
 
