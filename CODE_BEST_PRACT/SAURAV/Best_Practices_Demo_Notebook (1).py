@@ -1,40 +1,37 @@
 # Databricks notebook source
 # MAGIC %md
 # MAGIC ### 🔍 Notebook Overview
-# MAGIC This notebook demonstrates best practices for organizing a Databricks notebook, including proper markdown usage, code structuring, transformation, and logging updates. 
-# MAGIC
+# MAGIC This notebook demonstrates best practices for organizing a Databricks notebook, focusing on clean markdown usage, code structuring, transformation logic,  comprehensive logging updates and error handling.
 # MAGIC #### 📌 Key Elements:
-# MAGIC - **Purpose:** Showcasing a structured approach to Databricks notebooks.
-# MAGIC - **Source:** A dummy source table `source_table`.
-# MAGIC - **Target:** A dummy target table `target_table`.
-# MAGIC - **Parameters:** Job-specific parameters for flexibility in execution.
+# MAGIC - **Purpose:** Showcases a structured approach to building Databricks notebooks.
+# MAGIC - **Source Table:** A dummy source table `source_table` in the Bronze layer.
+# MAGIC - **Target Table:** A dummy target table `target_table` in the Silver layer.
+# MAGIC - **Parameters:** Customizable job-specific parameters for flexibility in execution and testing.
+# MAGIC
+# MAGIC ---
 # MAGIC
 # MAGIC ### 📅 Change Log
-# MAGIC Maintaining a change log helps track all updates and changes made to the notebook over time. It ensures accountability and makes it easier for others to follow the development progress.
+# MAGIC A detailed change log helps maintain clarity about notebook evolution. Tracking changes facilitates collaboration and smooth transition during handovers or updates.
 # MAGIC
-# MAGIC
-# MAGIC | Date       | Author          | Description                              |User Story| Version |
-# MAGIC |------------|-----------------|------------------------------------------|----------|---------|
-# MAGIC | 2024-10-02 | Saurav Chaudhary | Initial creation of the notebook         |<a href="https://adb-7024489078919155.15.azuredatabricks.net/?o=7024489078919155#notebook/1830848775887419/command/1830848775887420">Create best practices notebook</a>| v1.0    |
-# MAGIC | 2024-10-03 | Saurav Chaudhary | Added transformation logic and target write |           | v1.1    |
-# MAGIC
-# MAGIC
+# MAGIC | Date       | Author          | Description                                | User Story | Version |
+# MAGIC |------------|-----------------|--------------------------------------------|------------|---------|
+# MAGIC | 2024-10-02 | Developer_name | Initial creation of the notebook            | <a href="https://adb-7024489078919155.15.azuredatabricks.net/?o=7024489078919155#notebook/1830848775887419/command/1830848775887420">Create best practices notebook</a> | v1.0    |
+# MAGIC | 2024-10-03 | Developer_name | Added transformation logic and target write |            | v1.1    |
+# MAGIC ---
 
 # COMMAND ----------
 
 # MAGIC %md
 # MAGIC ### 🚀 Ingesting Source Data
-# MAGIC The source data is fetched from `source_table`. We apply a filter to select the necessary records before applying transformations.
+# MAGIC The source data is retrieved from the `source_table`. Initial filters are applied to select relevant records for further transformation.
 # MAGIC
 # MAGIC #### Source Details:
-# MAGIC - **Source Layer:** Bronze
+# MAGIC - **Source Layer:** Bronze (Raw Data)
 # MAGIC - **Source Table:** `source_table`
 # MAGIC - **Source Type:** Delta Table
 # MAGIC
-
-# COMMAND ----------
-
-# from UTILITIES.error_logger import DatabricksLogger
+# MAGIC The process checks if the source table exists in the catalog before data ingestion and handles errors if the table is missing.
+# MAGIC
 
 # COMMAND ----------
 
@@ -43,10 +40,37 @@
 
 # COMMAND ----------
 
+# MAGIC %md
+# MAGIC # Input Parameter Descriptions
+# MAGIC
+# MAGIC - **environment**: Specifies the environment (e.g., dev, prod).
+# MAGIC - **container**: Name of the storage container (default: "hft").
+# MAGIC - **storage_account**: Azure storage account name (default: "unitycatalog12").
+# MAGIC - **catalog**: The catalog where the tables are stored.
+# MAGIC - **schema**: The schema within the catalog.
+# MAGIC - **source_table**: Name of the source table.
+# MAGIC - **target_table**: Name of the target table.
+# MAGIC - **target_format**: Format of the target table (e.g., delta, parquet).
+# MAGIC - **client_id_key**: ID for fetching secret values.
+# MAGIC - **client_secret_key**: Value corresponding to the secret ID.
+# MAGIC
+# MAGIC # Logger and Error Handler
+# MAGIC
+# MAGIC - **Logger Object**: Initializes a logging object for capturing events.
+# MAGIC - **Error Handler Object**: Initializes error handling and response dictionary.
+# MAGIC
+
+# COMMAND ----------
+
+from UTILITIES.error_logger import DatabricksLogger
+from UTILITIES.exception_handler import DatabricksErrorHandler
+
+# COMMAND ----------
+
 # DBTITLE 1,fetching widgets parameters
-# Define source data
+# Fetch input parameters
 # Input 1: environment 
-dbutils.widgets.text(name="environment", defaultValue="", label="environment")
+dbutils.widgets.text(name="environment", defaultValue="dev", label="environment")
 environment = dbutils.widgets.get("environment")
 
 # Input 2: container 
@@ -58,11 +82,11 @@ dbutils.widgets.text(name="storage_account", defaultValue="unitycatalog12", labe
 storage_account = dbutils.widgets.get("storage_account")
 
 # Input 4: catalog 
-dbutils.widgets.text(name="catalog", defaultValue="", label="catalog")
+dbutils.widgets.text(name="catalog", defaultValue="main", label="catalog")
 catalog = dbutils.widgets.get("catalog")
 
 # Input 5: schema 
-dbutils.widgets.text(name="schema", defaultValue="", label="schema")
+dbutils.widgets.text(name="schema", defaultValue="default", label="schema")
 schema = dbutils.widgets.get("schema")
 
 # Input 6: source_table
@@ -77,6 +101,14 @@ target_table_name = dbutils.widgets.get("target_table")
 dbutils.widgets.text(name="target_format", defaultValue="", label="target_format")
 target_format = dbutils.widgets.get("target_format")
 
+# Input 9: client_id_key
+dbutils.widgets.text(name="client_id_key", defaultValue="CELEBAL-ADB-CLIENT-ID", label="client_id_key")
+client_id_key = dbutils.widgets.get("client_id_key")
+
+# Input 10: client_secret_key
+dbutils.widgets.text(name="client_secret_key", defaultValue="CELEBAL-ADB-SECRET-VALUE", label="client_secret_key")
+client_secret_key = dbutils.widgets.get("client_secret_key")
+
 #create Logger object
 logger = DatabricksLogger()
 
@@ -87,19 +119,20 @@ error = DatabricksErrorHandler(response_dict)
 # COMMAND ----------
 
 try:
+    #create source_table and target_table using the input parameter
     source_table=f"{catalog}.{schema}.{source_table_name}"
     target_table=f"{catalog}.{schema}.{target_table_name}"
-    table_exists = spark.catalog.tableExists(source_table)
+    logger.log_info(f"checking source table: {source_table} exits or not")
+    #check if source_table exists
     if check_table_exists(source_table):
         logger.log_info(f"{source_table} Table exists.")
-        # Create Dataframe
-        source_df=ingest_data(source_table)
-        logger.log_info("source_df created.")
-        error.handle_success(should_exit=False)
+        # create Dataframe
+        source_df=ingest_data_from_table(source_table)
+        logger.log_info(f"source_df created.")
     else:
+        #log and raise the error if source_table does not exist
         logger.log_error(f"{source_table} Table does not exist.")
-        error.handle_success(should_exit=True)
-        
+        error.handle_error(should_exit=True)
 except Exception as e:
     logger.log_error(f"Error while applying transformations: {str(e)}")
     error.handle_error(e) 
@@ -108,21 +141,37 @@ except Exception as e:
 
 # MAGIC %md
 # MAGIC ### 🔄 Data Transformation
-# MAGIC This section applies necessary transformations based on business logic. Transformations include data cleaning, formatting, and mapping to the target schema.
 # MAGIC
-# MAGIC #### Transformation Details:
-# MAGIC - **Filter criteria:** Filter data for the last 7 days.
-# MAGIC - **Aggregation:** Aggregate data to prepare for the target table.
-# MAGIC - **Target Table:** Data will be written to `target_table` in the Silver layer.
+# MAGIC This section applies several key transformations to the data:
+# MAGIC
+# MAGIC 1. **Initial Transformations:**
+# MAGIC    - Convert timestamp to date.
+# MAGIC    - Perform column transformations: cleaning, type casting, and calculations like `return`, `earning_per_share`, and `earning_ratio`.
+# MAGIC
+# MAGIC 2. **Aggregation and Join:**
+# MAGIC    - Group by `Company` and `Exchange`, and aggregate `Price`.
+# MAGIC    - Join the aggregated data back with the transformed DataFrame.
+# MAGIC
+# MAGIC 3. **Windowing and Masking:**
+# MAGIC    - Apply window function for ranking by `company`.
+# MAGIC    - Mask sensitive columns such as `earning_ratio`.
+# MAGIC    - Classify `Price` into categories: "Low", "Medium", or "High".
+# MAGIC
+# MAGIC 4. **Final Aggregations:**
+# MAGIC    - Calculate `Total_Price` and `Average_Price` for each company using window functions.
+# MAGIC
+# MAGIC 5. **Final Adjustments:**
+# MAGIC    - Change all column names to uppercase.
+# MAGIC
+# MAGIC Data is now ready for writing to the target table.
 # MAGIC
 
 # COMMAND ----------
 
 try:
     logger.log_info("Starting transformations on source_df.")
-
-    source_df_with_date =  convert_timestamp_to_date(source_df, "time", "yyyy-MM-dd")
-
+    source_df_with_date = convert_timestamp_to_date(source_df, "time", "yyyy-MM-dd")
+    #define transformation that needs to be applied on source_df_with_date
     transformations = [
                         ("Stock", col("Company")), 
                         ("Day", dayofmonth(col("Time"))),
@@ -133,13 +182,11 @@ try:
                         ("earning_per_share", col("return") - col("Price")),
                         ("earning_ratio", when(col("earning_per_share") != 0, col("return") / col("earning_per_share")).otherwise(None))
                     ]
-    
+    #apply above mentioned transformation on source_df_with_date
     transformed_df = apply_transformations(source_df_with_date, transformations)
-    transformed_df1 = transformed_df.select('Day', 'Date', 'Month', 'Time', 'Stock', 'Exchange', 'Price', 'percentage_change', 'return', 'earning_per_share', 'earning_ratio')
-
+    transformed_df = transformed_df.select('Day', 'Date', 'Month', 'Time', 'Stock', 'Exchange', 'Price', 'percentage_change', 'return', 'earning_per_share', 'earning_ratio')
+    #first transformation applied successfully
     logger.log_info("Transformations applied successfully.")
-    error.handle_success()
-
 except Exception as e:
     logger.log_error(f"Error while applying transformations: {str(e)}")
     error.handle_error(e) 
@@ -161,13 +208,11 @@ try:
     # Call the aggregation function
     aggregated_df = aggregate_data(transformed_df, groupby_cols, agg_col, alias)
 
-    #joining performed on transformed_df1 and aggregated_df using left join
+    #joining performed on transformed_df and aggregated_df using left join
     join_condition = [ 'Exchange']
-    joined_df = transformed_df1.join(aggregated_df, on=join_condition, how='left')
+    joined_df = transformed_df.join(aggregated_df, on=join_condition, how='left')
 
     logger.log_info("Aggregation and join applied successfully.")
-    error.handle_success()
-
 except Exception as e:
     logger.error(f"Error while applying transformations: {str(e)}")
     error.handle_error(e) 
@@ -199,10 +244,7 @@ try:
     transformed_DataFrame = apply_transformations(masked_DataFrame, transformations)
     transformed_DataFrame = transformed_DataFrame.drop('total_price')
 
-
     logger.log_info("transformed_dataframe created successfully.")
-    error.handle_success()
-
 except Exception as e:
     logger.log_error(f"Error while applying transformations: {str(e)}")
     error.handle_error(e) 
@@ -223,8 +265,6 @@ try:
     final_DataFrame = apply_transformations(transformed_DataFrame, transformations)
 
     logger.log_info("Transformation applied and final_DataFrame created successfully.")
-    error.handle_success()
-
 except Exception as e:
     logger.log_error(f"Error while applying transformations: {str(e)}")
     error.handle_error(e) 
@@ -237,8 +277,6 @@ try:
     final_DataFrame = change_name_case(final_DataFrame, case='upper')
 
     logger.log_info("Column name case applied successfully.")
-    error.handle_success()
-
 except Exception as e:
     logger.log_error(f"Error while applying transformations: {str(e)}")
     error.handle_error(e) 
@@ -247,11 +285,17 @@ except Exception as e:
 
 # MAGIC %md
 # MAGIC ### 🎯 Writing Transformed Data to Target
-# MAGIC Once the transformations are applied, the data is written to the target Delta table in the Gold layer.
+# MAGIC
+# MAGIC Once the transformations are applied, the data is written to the specified target format.
+# MAGIC
+# MAGIC #### Writing Process:
+# MAGIC - **Delta Format:** Data is written to the Delta table at `target_table` using overwrite mode.
+# MAGIC - **Other Formats:** Data is written to Azure storage with a dynamic path based on the current date.
 # MAGIC
 # MAGIC #### Target Details:
 # MAGIC - **Target Layer:** Silver
-# MAGIC - **Target Table:** `target_table`
+# MAGIC - **Formats Supported:** Delta, CSV, or other specified formats
+# MAGIC - **Dynamic Path (for non-Delta formats):** Path is generated based on the current date.
 # MAGIC
 
 # COMMAND ----------
@@ -260,15 +304,24 @@ try:
     logger.log_info(f"Writing data  in {target_format} format")
     option_dictionary= {"header": "true", "delimiter": ","}
     if target_format == 'delta':
+        #select the target path provided by user
         path=target_table
+        #write data in delta format to the target path
         write_data(final_DataFrame, path,'overwrite',target_format,option_dictionary )
+        #ETL notebook is completed
         logger.log_info(f"Data written in {target_format} format at {path}")
     else:
+        #create current date varibale to store current date
         current_date = datetime.now().strftime("%Y-%m-%d")
-        initiate_spn('CELEBAL-SECRETS', storage_account)
+        #initiate the service principal to access storage account
+        initiate_spn('CELEBAL-SECRETS', storage_account,client_id_key, client_secret_key)
+        #create a genralised path to store the data
         path=f'abfss://{container}@{storage_account}.dfs.core.windows.net/CODE_BEST_PRACTICES/{current_date}'
+        #write data on storage account
         write_data(final_DataFrame, path,'overwrite',target_format,option_dictionary )
-        logger.log_info(f"Data written in {target_format} format at {path}")
+        #ETL notebook is completed
+        logger.log_info("ETL pipeline completed successfully")
+        error.handle_success()
 except Exception as e:
     logger.log_error(f"Error while writing data in {target_format} format at {path} : {str(e)}")
     error.handle_error(e) 
