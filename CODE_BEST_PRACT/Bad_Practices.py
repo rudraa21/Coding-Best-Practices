@@ -1,14 +1,14 @@
 # Databricks notebook source
-from pyspark.sql import functions as F
+from pyspark.sql.functions import *
 from pyspark.sql.types import *
 
 # COMMAND ----------
 
-df0=spark.read.table("main.default.trading_data_bronze")
+df0=spark.read.table("databricks_champ.coding_practices.trading_data_bronze")
 
 # COMMAND ----------
 
-df0=spark.sql("select * from main.default.trading_data_bronze")
+df0=spark.sql("select * from databricks_champ.coding_practices.trading_data_bronze")
 df1=df0.withColumnRenamed("Company", "Stock")\
     .withColumn("Time", to_timestamp(col("Time"), 'yyyy-MM-dd HH:mm:ss'))\
     .withColumn("Day", dayofmonth(col("Time")))\
@@ -29,7 +29,7 @@ df2= df1.withColumn('Price', col('Price').cast('float')).groupBy( 'Exchange').ag
 # COMMAND ----------
 
 df3=df1.join(df2, on='Exchange', how='left')
-df3.count().distinct()
+df3.count()
 
 # COMMAND ----------
 
@@ -54,20 +54,21 @@ df5.display()
 
 # COMMAND ----------
 
-df5.write.mode('overwrite').saveAsTable("main.default.sample_table_02")
+df5.write.mode('overwrite').saveAsTable("databricks_champ.coding_practices.silver_table")
 
 # COMMAND ----------
 
-directory_id = "e4e34038-ea1f-4882-b6e8-ccd776459ca0"
-directory = f"https://login.microsoftonline.com/{directory_id}/oauth2/token"
+spark.conf.set("fs.azure.account.auth.type.celeballearning.dfs.core.windows.net", "OAuth")
+spark.conf.set("fs.azure.account.oauth.provider.type.celeballearning.dfs.core.windows.net", "org.apache.hadoop.fs.azurebfs.oauth2.ClientCredsTokenProvider")
+spark.conf.set("fs.azure.account.oauth2.client.id.celeballearning.dfs.core.windows.net", "01494e40-236d-4bcc-bd7b-003858bf4406")
+spark.conf.set("fs.azure.account.oauth2.client.secret.celeballearning.dfs.core.windows.net", "D328Q~W.OSo6XJqRODYmm29EOm2hMLaObGqKcbkb")
+spark.conf.set("fs.azure.account.oauth2.client.endpoint.celeballearning.dfs.core.windows.net", "https://login.microsoftonline.com/e4e34038-ea1f-4882-b6e8-ccd776459ca0/oauth2/token")
 
-# Configure Spark to use OAuth for authentication with the storage account
-spark.conf.set(f"fs.azure.account.auth.type.unitycatalog12.dfs.core.windows.net", "OAuth")
-spark.conf.set(f"fs.azure.account.oauth.provider.type.unitycatalog12.dfs.core.windows.net", "org.apache.hadoop.fs.azurebfs.oauth2.ClientCredsTokenProvider")
-spark.conf.set(f"fs.azure.account.oauth2.client.id.unitycatalog12.dfs.core.windows.net", "01494e40-236d-4bcc-bd7b-003858bf4406 ")
-spark.conf.set(f"fs.azure.account.oauth2.client.secret.unitycatalog12.dfs.core.windows.net", "D328Q~W.OSo6XJqRODYmm29EOm2hMLaObGqKcbkb")
-spark.conf.set(f"fs.azure.account.oauth2.client.endpoint.unitycatalog12.dfs.core.windows.net", directory)
 
 # COMMAND ----------
 
-df5.write.format('csv').mode('overwrite').save('abfss://hft@unitycatalog12.dfs.core.windows.net/CODE_BEST_PRACTICES/BAD_PRACTICES/11-10-2024/')
+df5.write.format('csv').mode('overwrite').save('abfss://code-best-practices@celeballearning.dfs.core.windows.net/code-best-practices/BAD_PRACTICES/11-10-2024/')
+
+# COMMAND ----------
+
+
