@@ -24,38 +24,36 @@
 
 # COMMAND ----------
 
-# MAGIC %run ./HTML_Display_Utility
-
-# COMMAND ----------
-
-# MAGIC %run ./Mail_request_Utility
-
-# COMMAND ----------
-
+# DBTITLE 1,Importing Library
 # Standard Python imports used across multiple notebooks
 import os
 import sys
-import requests
-import json
-from pyspark.sql import DataFrame,SparkSession
-from datetime import datetime, timedelta, date
+from datetime import datetime, date
+from pyspark.sql import DataFrame
 from pyspark.sql.window import Window
 from pyspark.sql.functions import col, to_timestamp, dayofmonth, date_format, regexp_replace, when,row_number,round,ceil,sum as F_sum ,lit, avg as F_avg
 from pyspark.sql.types import StructType, StructField, StringType, IntegerType, DoubleType
 
 # COMMAND ----------
 
+# DBTITLE 1,Setting notebook relative path
 # Append the required path to sys.path
 var_append_working_directory_to_syspath = os.path.dirname(os.path.realpath(os.getcwd()))
 sys.path.append(os.path.abspath(var_append_working_directory_to_syspath))
 
 # COMMAND ----------
 
+# DBTITLE 1,Import logger & Exception handler class
 from UTILITIES.error_logger import DatabricksLogger
 from UTILITIES.exception_handler import DatabricksErrorHandler
 
 # COMMAND ----------
 
+# MAGIC %run ./HTML_Display_Utility
+
+# COMMAND ----------
+
+# DBTITLE 1,Define logger and exception handler object
 #create Logger object
 logger = DatabricksLogger()
 
@@ -150,7 +148,7 @@ def check_table_exists(three_level_namespace: str) -> bool:
     
     except Exception as e:
         logger.log_error(f"Error occurred while checking the table existence: {str(e)}")
-        error.handle_error(e) 
+        error.handle_error() 
 
 # COMMAND ----------
 
@@ -171,7 +169,7 @@ def convert_timestamp_to_date(df, timestamp_col, date_format_str):
         return df.withColumn("Date", date_format(col(timestamp_col), date_format_str))
     except Exception as e:
         logger.log_error(f"Error in converting timestamp to date: {str(e)} ")
-        error.handle_error(e)
+        error.handle_error()
 
 # COMMAND ----------
 
@@ -195,7 +193,7 @@ def change_name_case(df, case='upper'):
         return df
     except Exception as e:
         logger.log_error(f"Error in changing column names case: {str(e)}")
-        error.handle_error(e) 
+        error.handle_error() 
 
 # COMMAND ----------
 
@@ -219,7 +217,7 @@ def apply_transformations(df: DataFrame, transformations: list) -> DataFrame:
         return df
     except Exception as e:
         logger.log_error(f"Error in applying transformations: {str(e)}")
-        error.handle_error(e) 
+        error.handle_error() 
 
 
 # COMMAND ----------
@@ -246,7 +244,7 @@ def ingest_data_from_table(source_table: str, filter_condition: str = None):
         return df
     except Exception as e:
         logger.log_error(f"Error in ingesting data from {source_table}: {str(e)}")
-        error.handle_error(e) 
+        error.handle_error() 
 
 # COMMAND ----------
 
@@ -269,7 +267,7 @@ def transform_data(df, group_column, agg_column):
         return transformed_df
     except Exception as e:
         logger.log_error(f"Error in transforming data: {str(e)}")
-        error.handle_error(e) 
+        error.handle_error() 
 
 # COMMAND ----------
 
@@ -308,7 +306,7 @@ def write_data(df, path: str, writing_mode: str, writing_format: str, options_di
         logger.log_info(f"Data written successfully to {path} in {writing_format} format.")     
     except Exception as e:
         logger.log_error(f"Error in writing data to {path}: {str(e)}")
-        error.handle_error(e)
+        error.handle_error()
 
 # COMMAND ----------
 
@@ -381,7 +379,7 @@ def retry_on_failure(func, retries=3):
             logger.log_error(f"Attempt {attempt} failed: {str(e)}")
             if attempt == retries:
                 logger.log_error("All retry attempts failed.")
-                error.handle_error(e)
+                error.handle_error()
 
 
 # COMMAND ----------

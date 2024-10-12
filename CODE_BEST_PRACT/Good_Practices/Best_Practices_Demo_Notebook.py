@@ -40,6 +40,11 @@
 
 # COMMAND ----------
 
+# DBTITLE 1,Importing Mail Utility
+# MAGIC %run ../UTILITIES/Mail_request_Utility
+
+# COMMAND ----------
+
 # MAGIC %md
 # MAGIC # Input Parameter Descriptions
 # MAGIC
@@ -98,6 +103,9 @@ client_id_key = dbutils.widgets.get("client_id_key")
 dbutils.widgets.text(name="client_secret_key", defaultValue="CELEBAL-ADB-SECRET-VALUE", label="client_secret_key")
 client_secret_key = dbutils.widgets.get("client_secret_key")
 
+# Input 11: logic_app_url
+dbutils.widgets.text(name="logic_app_url_key", defaultValue="LOGIC-APP-URL", label="logic_app_url_key")
+logic_app_url_key = dbutils.widgets.get("logic_app_url_key")
 
 # COMMAND ----------
 
@@ -117,7 +125,8 @@ try:
         logger.log_error(f"{source_table} Table does not exist.")
 except Exception as e:
     logger.log_error(f"Error while applying transformations: {str(e)}")
-    error.handle_error(should_exit=True) 
+    send_fail_notification(error_message=str(e),logic_app_url_key=logic_app_url_key,databricks_scope='CELEBAL-SECRETS')
+    error.handle_error() 
 
 # COMMAND ----------
 
@@ -171,6 +180,7 @@ try:
     logger.log_info("Transformations applied successfully.")
 except Exception as e:
     logger.log_error(f"Error while applying transformations: {str(e)}")
+    send_fail_notification(error_message=str(e),logic_app_url_key=logic_app_url_key,databricks_scope='CELEBAL-SECRETS')
     error.handle_error() 
 
 # COMMAND ----------
@@ -198,6 +208,7 @@ try:
     logger.log_info("Aggregation and join applied successfully.")
 except Exception as e:
     logger.log_error(f"Error while applying transformations: {str(e)}")
+    send_fail_notification(error_message=str(e),logic_app_url_key=logic_app_url_key,databricks_scope='CELEBAL-SECRETS')
     error.handle_error() 
 
 # COMMAND ----------
@@ -229,6 +240,7 @@ try:
     logger.log_info("transformed_dataframe created successfully.")
 except Exception as e:
     logger.log_error(f"Error while applying transformations: {str(e)}")
+    send_fail_notification(error_message=str(e),logic_app_url_key=logic_app_url_key,databricks_scope='CELEBAL-SECRETS')
     error.handle_error() 
 
 # COMMAND ----------
@@ -249,6 +261,7 @@ try:
     logger.log_info("Transformation applied and final_DataFrame created successfully.")
 except Exception as e:
     logger.log_error(f"Error while applying transformations: {str(e)}")
+    send_fail_notification(error_message=str(e),logic_app_url_key=logic_app_url_key,databricks_scope='CELEBAL-SECRETS')
     error.handle_error()
 
 # COMMAND ----------
@@ -261,6 +274,7 @@ try:
     logger.log_info("Column name case applied successfully.")
 except Exception as e:
     logger.log_error(f"Error while applying transformations: {str(e)}")
+    send_fail_notification(error_message=str(e),logic_app_url_key=logic_app_url_key,databricks_scope='CELEBAL-SECRETS')
     error.handle_error() 
 
 # COMMAND ----------
@@ -306,6 +320,7 @@ try:
     error.handle_success()
 except Exception as e:
     logger.log_error(f"Error while writing data in {target_format} format at {path} : {str(e)}")
+    send_fail_notification(error_message=str(e),logic_app_url_key=logic_app_url_key,databricks_scope='CELEBAL-SECRETS')
     error.handle_error() 
 
 

@@ -1,12 +1,9 @@
-import sys
-sys.path.append("/Workspace/Users/saurav.chaudhary@celebaltech.com/Coding-Best-Practices/")
-
-from CODE_BEST_PRACT.SAURAV.UTILITIES.Common_Utilities import check_table_exists,convert_timestamp_to_date,change_name_case,apply_transformations,ingest_data
-from CODE_BEST_PRACT.SAURAV.Test import utils_function_test_data1 as uf_test_data
-import pytest
+from CODE_BEST_PRACT.UTILITIES.Common_Utilities import check_table_exists,convert_timestamp_to_date,change_name_case,apply_transformations,ingest_data
+from CODE_BEST_PRACT.Test import utils_function_test_data1 as uf_test_data
 from unittest.mock import patch
-from . import conftest
+import conftest
 from pyspark.sql import SparkSession, Row
+import pytest
 
 @pytest.mark.parametrize("three_level_namespace, expected_result", uf_test_data.check_table_exists_test_cases)
 def test_check_table_exists(spark,three_level_namespace, expected_result):

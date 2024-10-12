@@ -7,10 +7,12 @@ import os
 notebook_path = dbutils.notebook.entry_point.getDbutils().notebook().getContext().notebookPath().get()
 
 # Define the repository path for the branch feature_05-10-2024_Saurav
-repo_root = f'/Workspace/users/saurav.chaudhary@celebaltech.com/Coding-Best-Practices/feature_05-10-2024_Saurav'
+# Append the required path to sys.path
+var_append_working_directory_to_syspath = os.path.dirname(os.path.realpath(os.getcwd()))
+sys.path.append(os.path.abspath(var_append_working_directory_to_syspath))
 
-# Ensure pytest looks in the right directory by adjusting the sys.path
-sys.path.insert(0, repo_root)
+# # Ensure pytest looks in the right directory by adjusting the sys.path
+# sys.path.insert(0, repo_root)
 
 # Skip writing pyc files on a readonly filesystem.
 sys.dont_write_bytecode = True
