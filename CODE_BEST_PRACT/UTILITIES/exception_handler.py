@@ -89,9 +89,9 @@ class DatabricksErrorHandler:
                 "detailed_error_info": traceback.format_exc()
             }
             self.update_response(status="failed", error_message=error_info)
-
             if should_exit:
                 self.notebook_exit_response()
+            raise exc_value
 
     def notebook_exit_response(self):
         """

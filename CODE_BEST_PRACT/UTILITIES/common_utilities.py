@@ -28,15 +28,19 @@
 
 # COMMAND ----------
 
+# MAGIC %run ./Mail_request_Utility
+
+# COMMAND ----------
+
 # Standard Python imports used across multiple notebooks
 import os
 import sys
-import pandas as pd
-import numpy as np
+import requests
+import json
 from pyspark.sql import DataFrame,SparkSession
 from datetime import datetime, timedelta, date
 from pyspark.sql.window import Window
-from pyspark.sql.functions import col, to_timestamp, dayofmonth, date_format, regexp_replace, when,row_number,round
+from pyspark.sql.functions import col, to_timestamp, dayofmonth, date_format, regexp_replace, when,row_number,round,ceil,sum as F_sum ,lit, avg as F_avg
 from pyspark.sql.types import StructType, StructField, StringType, IntegerType, DoubleType
 
 # COMMAND ----------
@@ -102,7 +106,7 @@ def initiate_spn(scope_name: str, storage_account_name_list: str, application_id
     except Exception as e:
         # Log the exception with an error message
         logger.log_error(f"Error initiating SPN for {storage_account_name}: {str(e)}")
-        error.handle_error(e) 
+        error.handle_error() 
 
 
 # COMMAND ----------
@@ -124,7 +128,7 @@ def get_secret(scope, key):
         return secret
     except Exception as e:
         logger.log_error(f"Error retrieving secret {key}: {str(e)}")
-        error.handle_error(e)
+        error.handle_error()
 
 # COMMAND ----------
 
@@ -321,11 +325,12 @@ def aggregate_data(df: DataFrame, groupby_cols: list, agg_col: str, alias: str) 
     Returns:
     - DataFrame: The aggregated DataFrame.
     """
+    df = df.withColumn(agg_col, regexp_replace(col(agg_col), '₹', '').cast('float'))
     # Ceil the specified aggregation column
-    df = df.withColumn(agg_col, F.ceil(F.col(agg_col)))
+    df = df.withColumn(agg_col, ceil(col(agg_col)))
 
     # Perform aggregation
-    aggregated_df = df.groupBy(groupby_cols).agg(F.sum(agg_col).alias(alias))
+    aggregated_df = df.groupBy(groupby_cols).agg(F_sum(agg_col).alias(alias))
 
     return aggregated_df
 
@@ -345,12 +350,12 @@ def mask_sensitive_data(df, sensitive_columns):
     """
     try:
         for col in sensitive_columns:
-            df = df.withColumn(col, F.lit("********"))
+            df = df.withColumn(col, lit("********"))
         logger.log_info(f"Masked sensitive data in DataFrame.")
         return df
     except Exception as e:
         logger.log_error(f"Error masking sensitive data: {str(e)}")
-        error.handle_error(e)
+        error.handle_error()
 
 
 # COMMAND ----------

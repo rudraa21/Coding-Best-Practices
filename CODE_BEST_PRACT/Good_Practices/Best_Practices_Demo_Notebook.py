@@ -63,19 +63,19 @@ dbutils.widgets.text(name="environment", defaultValue="dev", label="environment"
 environment = dbutils.widgets.get("environment")
 
 # Input 2: container 
-dbutils.widgets.text(name="container", defaultValue="hft", label="container")
+dbutils.widgets.text(name="container", defaultValue="code-best-practices", label="container")
 container = dbutils.widgets.get("container")
 
 # Input 3: storage_account 
-dbutils.widgets.text(name="storage_account", defaultValue="unitycatalog12", label="storage_account")
+dbutils.widgets.text(name="storage_account", defaultValue="celeballearning", label="storage_account")
 storage_account = dbutils.widgets.get("storage_account")
 
 # Input 4: catalog 
-dbutils.widgets.text(name="catalog", defaultValue="main", label="catalog")
+dbutils.widgets.text(name="catalog", defaultValue="databricks_champ", label="catalog")
 catalog = dbutils.widgets.get("catalog")
 
 # Input 5: schema 
-dbutils.widgets.text(name="schema", defaultValue="default", label="schema")
+dbutils.widgets.text(name="schema", defaultValue="coding_practices", label="schema")
 schema = dbutils.widgets.get("schema")
 
 # Input 6: source_table
@@ -113,12 +113,11 @@ try:
         source_df=ingest_data_from_table(source_table)
         logger.log_info(f"source_df created.")
     else:
-        #log and raise the error if source_table does not exist
+        #log the error if source_table does not exist
         logger.log_error(f"{source_table} Table does not exist.")
-        error.handle_error(should_exit=True)
 except Exception as e:
     logger.log_error(f"Error while applying transformations: {str(e)}")
-    error.handle_error(e) 
+    error.handle_error(should_exit=True) 
 
 # COMMAND ----------
 
@@ -167,12 +166,12 @@ try:
                     ]
     #apply above mentioned transformation on source_df_with_date
     transformed_df = apply_transformations(source_df_with_date, transformations)
-    transformed_df = transformed_df.select('Day', 'Date', 'Month', 'Time', 'Stock', 'Exchange', 'Price', 'percentage_change', 'return', 'earning_per_share', 'earning_ratio')
+    selected_transformed_df = transformed_df.select('Day', 'Date', 'Month', 'Time', 'Stock', 'Exchange', 'Price', 'percentage_change', 'return', 'earning_per_share', 'earning_ratio')
     #first transformation applied successfully
     logger.log_info("Transformations applied successfully.")
 except Exception as e:
     logger.log_error(f"Error while applying transformations: {str(e)}")
-    error.handle_error(e) 
+    error.handle_error() 
 
 # COMMAND ----------
 
@@ -184,21 +183,22 @@ try:
     groupby_cols = ['Company', 'Exchange']
     agg_col = 'Price'
     alias = 'Total_Price'
+    # transformed_df
     # Transform the 'Price' column to float for correct aggregation
     transformations_on_source_df=[('Price', col('Price').cast('float'))]
-
+    # transformed_df.printSchema()
     transformed_df=apply_transformations(source_df_with_date, transformations_on_source_df)
     # Call the aggregation function
     aggregated_df = aggregate_data(transformed_df, groupby_cols, agg_col, alias)
 
     #joining performed on transformed_df and aggregated_df using left join
     join_condition = [ 'Exchange']
-    joined_df = transformed_df.join(aggregated_df, on=join_condition, how='left')
+    joined_df = selected_transformed_df.join(aggregated_df, on=join_condition, how='left')
 
     logger.log_info("Aggregation and join applied successfully.")
 except Exception as e:
-    logger.error(f"Error while applying transformations: {str(e)}")
-    error.handle_error(e) 
+    logger.log_error(f"Error while applying transformations: {str(e)}")
+    error.handle_error() 
 
 # COMMAND ----------
 
@@ -223,14 +223,13 @@ try:
                             .otherwise("High")
                         )
                 ]
-
     transformed_DataFrame = apply_transformations(masked_DataFrame, transformations)
     transformed_DataFrame = transformed_DataFrame.drop('total_price')
 
     logger.log_info("transformed_dataframe created successfully.")
 except Exception as e:
     logger.log_error(f"Error while applying transformations: {str(e)}")
-    error.handle_error(e) 
+    error.handle_error() 
 
 # COMMAND ----------
 
@@ -241,8 +240,8 @@ try:
 
     # 'Total_Price' and 'Average_Price' columns
     transformations = [
-                        ('Total_Price', F.sum("Price").over(window_spec)),
-                        ('Average_Price',  F.avg("Price").over(window_spec))
+                        ('Total_Price', F_sum("Price").over(window_spec)),
+                        ('Average_Price', F_avg("Price").over(window_spec))
                 ]
 
     final_DataFrame = apply_transformations(transformed_DataFrame, transformations)
@@ -250,7 +249,7 @@ try:
     logger.log_info("Transformation applied and final_DataFrame created successfully.")
 except Exception as e:
     logger.log_error(f"Error while applying transformations: {str(e)}")
-    error.handle_error(e) 
+    error.handle_error()
 
 # COMMAND ----------
 
@@ -262,7 +261,7 @@ try:
     logger.log_info("Column name case applied successfully.")
 except Exception as e:
     logger.log_error(f"Error while applying transformations: {str(e)}")
-    error.handle_error(e) 
+    error.handle_error() 
 
 # COMMAND ----------
 
@@ -292,22 +291,22 @@ try:
         #write data in delta format to the target path
         write_data(final_DataFrame, path,'overwrite',target_format,option_dictionary )
         #ETL notebook is completed
-        logger.log_info(f"Data written in {target_format} format at {path}")
+        # logger.log_info(f"Data written in {target_format} format at {path}")
     else:
         #create current date varibale to store current date
         current_date = datetime.now().strftime("%Y-%m-%d")
         #initiate the service principal to access storage account
         initiate_spn('CELEBAL-SECRETS', storage_account,client_id_key, client_secret_key)
         #create a genralised path to store the data
-        path=f'abfss://{container}@{storage_account}.dfs.core.windows.net/CODE_BEST_PRACTICES/{current_date}'
+        path=f'abfss://{container}@{storage_account}.dfs.core.windows.net/{current_date}'
         #write data on storage account
         write_data(final_DataFrame, path,'overwrite',target_format,option_dictionary )
         #ETL notebook is completed
-        logger.log_info("ETL pipeline completed successfully")
-        error.handle_success()
+    logger.log_info("ETL pipeline completed successfully")
+    error.handle_success()
 except Exception as e:
     logger.log_error(f"Error while writing data in {target_format} format at {path} : {str(e)}")
-    error.handle_error(e) 
+    error.handle_error() 
 
 
 # COMMAND ----------
