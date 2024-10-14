@@ -109,6 +109,7 @@ logic_app_url_key = dbutils.widgets.get("logic_app_url_key")
 
 # COMMAND ----------
 
+# DBTITLE 1,checking and creating source_table
 try:
     #create source_table and target_table using the input parameter
     source_table=f"{catalog}.{schema}.{source_table_name}"
@@ -159,6 +160,7 @@ except Exception as e:
 
 # COMMAND ----------
 
+# DBTITLE 1,Applying 1st layer of transformation
 try:
     logger.log_info("Starting transformations on source_df.")
     source_df_with_date = convert_timestamp_to_date(source_df, "time", "yyyy-MM-dd")
@@ -175,7 +177,7 @@ try:
                     ]
     #apply above mentioned transformation on source_df_with_date
     transformed_df = apply_transformations(source_df_with_date, transformations)
-    selected_transformed_df = transformed_df.select('Day', 'Date', 'Month', 'Time', 'Stock', 'Exchange', 'Price', 'percentage_change', 'return', 'earning_per_share', 'earning_ratio')
+    transformed_df_with_selected_fields = transformed_df.select('Day', 'Date', 'Month', 'Time', 'Stock', 'Exchange', 'Price', 'percentage_change', 'return', 'earning_per_share', 'earning_ratio')
     #first transformation applied successfully
     logger.log_info("Transformations applied successfully.")
 except Exception as e:
@@ -185,7 +187,7 @@ except Exception as e:
 
 # COMMAND ----------
 
-# DBTITLE 1,transformations
+# DBTITLE 1,2nd layer of transformations
 try:
     logger.log_info("Starting transformations on source_df_with_date.")
 
@@ -203,7 +205,7 @@ try:
 
     #joining performed on transformed_df and aggregated_df using left join
     join_condition = [ 'Exchange']
-    joined_df = selected_transformed_df.join(aggregated_df, on=join_condition, how='left')
+    joined_df = transformed_df_with_selected_fields.join(aggregated_df, on=join_condition, how='left')
 
     logger.log_info("Aggregation and join applied successfully.")
 except Exception as e:
@@ -213,6 +215,7 @@ except Exception as e:
 
 # COMMAND ----------
 
+# DBTITLE 1,3rd layer of transformation
 try:
     logger.log_info("Starting transformations on source_df_with_date.")
     # Window Specification - Partition data by 'company' and order rows by 'company' column and apply row_number() function
@@ -245,6 +248,7 @@ except Exception as e:
 
 # COMMAND ----------
 
+# DBTITLE 1,4th layer of transformation
 try:
     logger.log_info("Starting transformations on transformed_DataFrame.")
     # Partitioning the data by 'Company'
@@ -266,6 +270,7 @@ except Exception as e:
 
 # COMMAND ----------
 
+# DBTITLE 1,Apply name case on final DataFrame
 try:
     logger.log_info("Applying column name case to final_DataFrame.")
     # change all column case to upper
@@ -296,6 +301,7 @@ except Exception as e:
 
 # COMMAND ----------
 
+# DBTITLE 1,Write the Dataframe in user provided format and location
 try:
     logger.log_info(f"Writing data  in {target_format} format")
     option_dictionary= {"header": "true", "delimiter": ","}
@@ -314,7 +320,7 @@ try:
         #create a genralised path to store the data
         path=f'abfss://{container}@{storage_account}.dfs.core.windows.net/{current_date}'
         #write data on storage account
-        write_data(final_DataFrame, path,'overwrite',target_format,option_dictionary )
+        write_data(final_DataFrame, path,'overwrite',target_format,option_dictionary)
         #ETL notebook is completed
     logger.log_info("ETL pipeline completed successfully")
     error.handle_success()

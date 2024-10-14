@@ -3,18 +3,11 @@
 # MAGIC ### 🛠 Utility Notebook: `common_utilities`
 # MAGIC This notebook contains common functions, imports, and reusable data definitions that can be leveraged across multiple Databricks notebooks. It aims to promote modularization, code reuse, and prevent code duplication.
 # MAGIC
-
-# COMMAND ----------
-
-# MAGIC %md
 # MAGIC # Logger and Error Handler
 # MAGIC
 # MAGIC - **Logger Object**: Initializes a logging object for capturing events.
 # MAGIC - **Error Handler Object**: Initializes error handling and response dictionary.
-
-# COMMAND ----------
-
-# MAGIC %md
+# MAGIC
 # MAGIC ### 📅 Change Log
 # MAGIC
 # MAGIC | Date       | Author            | Description                                 | Version |
@@ -49,6 +42,7 @@ from UTILITIES.exception_handler import DatabricksErrorHandler
 
 # COMMAND ----------
 
+# DBTITLE 1,Importing HTML utility
 # MAGIC %run ./HTML_Display_Utility
 
 # COMMAND ----------
@@ -63,6 +57,7 @@ error = DatabricksErrorHandler(response_dict)
 
 # COMMAND ----------
 
+# DBTITLE 1,initiate_spn
 def initiate_spn(scope_name: str, storage_account_name_list: str, application_id_secret_key: str, application_id_secret_value: str) -> None:
     """
     Initiates the service principal and performs access setup for Azure storage containers.
@@ -109,6 +104,7 @@ def initiate_spn(scope_name: str, storage_account_name_list: str, application_id
 
 # COMMAND ----------
 
+# DBTITLE 1,get_secret
 def get_secret(scope, key):
     """
     Retrieve a secret from Databricks Secrets.
@@ -130,6 +126,7 @@ def get_secret(scope, key):
 
 # COMMAND ----------
 
+# DBTITLE 1,check_table_exists
 def check_table_exists(three_level_namespace: str) -> bool:
     """
     Function to check if a table exists in Databricks using the three-level namespace.
@@ -152,6 +149,7 @@ def check_table_exists(three_level_namespace: str) -> bool:
 
 # COMMAND ----------
 
+# DBTITLE 1,convert_timestamp_to_date
 def convert_timestamp_to_date(df, timestamp_col, date_format_str):
     """
     Convert a timestamp column to a string representation of a date using the specified format.
@@ -173,6 +171,7 @@ def convert_timestamp_to_date(df, timestamp_col, date_format_str):
 
 # COMMAND ----------
 
+# DBTITLE 1,change_name_case
 def change_name_case(df, case='upper'):
     """
     Change the case of column names in a DataFrame
@@ -197,6 +196,7 @@ def change_name_case(df, case='upper'):
 
 # COMMAND ----------
 
+# DBTITLE 1,apply_fransformation
 def apply_transformations(df: DataFrame, transformations: list) -> DataFrame:
     """
     Apply a list of transformations to a DataFrame using withColumn.
@@ -222,6 +222,7 @@ def apply_transformations(df: DataFrame, transformations: list) -> DataFrame:
 
 # COMMAND ----------
 
+# DBTITLE 1,ingest_data_from_table
 # Function to ingest data from a source
 def ingest_data_from_table(source_table: str, filter_condition: str = None):
     """
@@ -248,6 +249,7 @@ def ingest_data_from_table(source_table: str, filter_condition: str = None):
 
 # COMMAND ----------
 
+# DBTITLE 1,transformed_data
 # Function to transform data
 def transform_data(df, group_column, agg_column):
     """
@@ -271,6 +273,7 @@ def transform_data(df, group_column, agg_column):
 
 # COMMAND ----------
 
+# DBTITLE 1,write_data
 # Function to write data to a target
 def write_data(df, path: str, writing_mode: str, writing_format: str, options_dict: dict):
     
@@ -310,6 +313,7 @@ def write_data(df, path: str, writing_mode: str, writing_format: str, options_di
 
 # COMMAND ----------
 
+# DBTITLE 1,aggregate_data
 def aggregate_data(df: DataFrame, groupby_cols: list, agg_col: str, alias: str) -> DataFrame:
     """
     Perform an aggregation on the specified DataFrame.
@@ -334,6 +338,7 @@ def aggregate_data(df: DataFrame, groupby_cols: list, agg_col: str, alias: str) 
 
 # COMMAND ----------
 
+# DBTITLE 1,mask_sensitive_data
 # Function to mask sensitive data before logging
 def mask_sensitive_data(df, sensitive_columns):
     """
@@ -358,6 +363,7 @@ def mask_sensitive_data(df, sensitive_columns):
 
 # COMMAND ----------
 
+# DBTITLE 1,retry_on_failure
 # Example: Function to handle errors gracefully with retries
 def retry_on_failure(func, retries=3):
     """
@@ -384,6 +390,7 @@ def retry_on_failure(func, retries=3):
 
 # COMMAND ----------
 
+# DBTITLE 1,functions_and_variables_html
 html = html_intro()
 html += html_header()
 
