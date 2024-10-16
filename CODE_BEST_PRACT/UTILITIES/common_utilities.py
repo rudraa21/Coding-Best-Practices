@@ -164,10 +164,14 @@ def convert_timestamp_to_date(df, timestamp_col, date_format_str):
     """
     try:
         logger.log_info(f"Converting timestamp column {timestamp_col} to date format {date_format_str}")
-        return df.withColumn("Date", date_format(col(timestamp_col), date_format_str))
+        return df
     except Exception as e:
         logger.log_error(f"Error in converting timestamp to date: {str(e)} ")
         error.handle_error()
+
+# COMMAND ----------
+
+#his new code
 
 # COMMAND ----------
 
